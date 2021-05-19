@@ -3,6 +3,8 @@ Code for the time feature collector, which extracts "duration", "time to departu
 
 ## Usage
 
+Before running the feature collector, you need to initialize the redis cache and load the data. Follow the instructions at https://github.com/Ride2Rail/offer-cache.
+
 ### Local development (debug on)
 
 ```bash
@@ -30,7 +32,6 @@ docker build -t r2r/time-fc:latest .
 ```bash
 docker run --rm -it --name time -p 5000:5000 --link offer-cache_cache_1:cache -e FLASK_ENV='development' --net cache-network -v "$PWD":/code r2r/time-fc:latest
 ```
-
 Please note that "cache-network" is the network where the offer-cache container runs when launched with docker-compose. 
 
 
