@@ -6,7 +6,9 @@ from datetime import datetime as dt
 from datetime import timedelta
 import configparser as cp
 
-from cache_operations import extract_data_from_cache
+from r2r_offer_utils import normalization
+from r2r_offer_utils.cache_operations import extract_data_from_cache
+
 import rush_hours
 import rod
 
@@ -74,17 +76,31 @@ def extract():
         offer_features['waiting_time'][offer_id] = waiting_time_between_legs
         offer_features['rush_overlap'][offer_id] = rush_overlap
         
+    
+    # normalize features with zscore and min-max
+    offer_features_zscores = {}
+    offer_features_minmax = {}
+    for feature in offer_features:
+        offer_features_zscores[feature] = normalization.zscore(offer_features[feature], flipped=True)    
+        offer_features_minmax[feature] = normalization.minmaxscore(offer_features[feature], flipped=True)   
+        
     # rank offers by score and convert scores to weights
-    offer_features_weights = {}
+    offer_features_ROD_weights = {}
     for feature in offer_features:
         offer_ranks = rod.rank_offers(offer_features[feature])
-        offer_features_weights[feature] = rod.assign_rod_weights(offer_ranks)
+        offer_features_ROD_weights[feature] = rod.assign_rod_weights(offer_ranks)
         
     print('\n\nOffer features:')
-    print(json.dumps(offer_features, indent=4, sort_keys=True))   
+    print(json.dumps(offer_features, indent=4, sort_keys=True))
     
-    print('\n\nOffer features (weights):')
-    print(json.dumps(offer_features_weights, indent=4))  
+    print('\n\nOffer features (zscores):')
+    print(json.dumps(offer_features_zscores, indent=4, sort_keys=True))
+    
+    print('\n\nOffer features (minmax):')
+    print(json.dumps(offer_features_minmax, indent=4, sort_keys=True))
+    
+    print('\n\nOffer features (ROD weights):')
+    print(json.dumps(offer_features_ROD_weights, indent=4))  
     
     
     return response
