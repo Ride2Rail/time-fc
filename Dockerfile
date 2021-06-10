@@ -1,7 +1,10 @@
-FROM python:3.6
+#time-fc
 
-ENV APP_NAME=time-fc.py
+FROM python:3.9
 
+ENV APP_NAME=time.py
+
+COPY time.conf /code/time.conf
 COPY "$APP_NAME" /code/"$APP_NAME"
 
 WORKDIR /code
@@ -12,6 +15,8 @@ ENV FLASK_RUN_HOST=0.0.0.0
 RUN pip3 install --no-cache-dir --upgrade pip
 
 COPY requirements.txt requirements.txt
+#COPY rod.py rod.py
+COPY rush_hours.py rush_hours.py
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 EXPOSE 5000

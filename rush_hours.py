@@ -36,11 +36,11 @@ def calc_rush_overlap(start_time, end_time, country='default'):
         rush_minutes = 0
     
     rush_overlap = rush_minutes / ((end_timedelta - start_timedelta).seconds/60)
-
+    """
     print()
     print(rush_interval[0], rush_interval[1])
     print(start_timedelta, end_timedelta)
     print(start_in_rush, end_in_rush)
     print('rush minutes:', rush_minutes)
-    
+    """
     return rush_minutes, rush_overlap
