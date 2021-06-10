@@ -6,7 +6,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 import configparser as cp
 import logging
-import time
+#import time
 
 from r2r_offer_utils import normalization
 from r2r_offer_utils.cache_operations import read_data_from_cache_wrapper, store_simple_data_to_cache
@@ -34,9 +34,9 @@ logger.setLevel(logging.INFO)
 def extract():
     
     # just to test the async calls
-    logger.info('Going to sleep...')
-    time.sleep(2)
-    logger.info('Just woke up.')
+    #logger.info('Going to sleep...')
+    #time.sleep(2)
+    #logger.info('Just woke up.')
     
     data = request.get_json()
     request_id = data['request_id']
