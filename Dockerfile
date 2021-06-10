@@ -2,9 +2,9 @@
 
 FROM python:3.9
 
-ENV APP_NAME=time.py
+ENV APP_NAME=time-fc.py
 
-COPY time.conf /code/time.conf
+COPY time-fc.conf /code/time-fc.conf
 COPY "$APP_NAME" /code/"$APP_NAME"
 
 WORKDIR /code
