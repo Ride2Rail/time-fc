@@ -21,10 +21,14 @@ app = Flask(service_name)
 config = cp.ConfigParser()
 config.read(f'{service_name}.conf')
 
+
+
 # cache
 cache = redis.Redis(host=config.get('cache', 'host'),
                     port=config.get('cache', 'port'),
                     decode_responses=True)
+
+norm_type = config.get('running', 'scores')
 
 # init logging
 logger, ch = setup_logger()
@@ -43,8 +47,6 @@ def extract():
 
     # ask for the entire list of offer ids
     offer_data = cache.lrange('{}:offers'.format(request_id), 0, -1)
-    #print('\n\nRequest ID:', request_id) 
-    #print('Offer data [21]:', offer_data)
 
     response = app.response_class(
         response=f'{{"request_id": "{request_id}"}}',
@@ -55,9 +57,7 @@ def extract():
     output_offer_level, output_tripleg_level = read_data_from_cache_wrapper(pa_cache=cache, pa_request_id=request_id,
                                                                             pa_offer_level_items=['start_time', 'end_time'],
                                                                             pa_tripleg_level_items=['start_time', 'end_time'])
-    #print('\n\nOutput offer level [33]:', json.dumps(output_offer_level, indent=4, sort_keys=True))
-    #print('\n\nOutput tripleg level [34]:', json.dumps(output_tripleg_level, indent=4, sort_keys=True))
-    
+
     # to be replaced with the actual date and time of the request
     #current_time = dt(2019, 5, 5)
     current_time = dt.fromisoformat('2019-05-05 00:05:00+00:00')
@@ -68,7 +68,6 @@ def extract():
                       'rush_overlap':{}}
     
     for offer_id in output_offer_level['offer_ids']:
-        #logger.info(output_offer_level[offer_id]['start_time'])
         offer_start_time = dt.fromisoformat(output_offer_level[offer_id]['start_time'])
         offer_end_time = dt.fromisoformat(output_offer_level[offer_id]['end_time'])
         offer_duration = (offer_end_time - offer_start_time).total_seconds()/60
@@ -90,30 +89,27 @@ def extract():
         offer_features['rush_overlap'][offer_id] = rush_overlap
         
     
-    # normalize features with zscore and min-max
-    offer_features_zscores = {}
-    offer_features_minmax = {}
+    # normalize features and store them to cache
+    offer_features_norm = {}
     for feature in offer_features:
-        offer_features_zscores[feature] = normalization.zscore(offer_features[feature], flipped=True)    
-        offer_features_minmax[feature] = normalization.minmaxscore(offer_features[feature], flipped=True)
+        if norm_type == 'z_score':
+            offer_features_norm[feature] = normalization.zscore(offer_features[feature], flipped=True)
+        else:
+            offer_features_norm[feature] = normalization.minmaxscore(offer_features[feature], flipped=True)
+            
         store_simple_data_to_cache(pa_cache=cache, 
                                    pa_request_id=request_id,
-                                   pa_data=offer_features_zscores[feature],
+                                   pa_data=offer_features_norm[feature],
                                    pa_sub_key=feature)
         
     """    
     print('\n\nOffer features:')
     print(json.dumps(offer_features, indent=4, sort_keys=True))
     
-    print('\n\nOffer features (zscores):')
-    print(json.dumps(offer_features_zscores, indent=4, sort_keys=True))
-    
-    print('\n\nOffer features (minmax):')
-    print(json.dumps(offer_features_minmax, indent=4, sort_keys=True))
+    print('\n\nOffer features (norm):')
+    print(json.dumps(offer_features_norm, indent=4, sort_keys=True))
+
     """
-    #print('\n\nOffer features (ROD weights):')
-    #print(json.dumps(offer_features_ROD_weights, indent=4))  
-    
     
     return response
 
