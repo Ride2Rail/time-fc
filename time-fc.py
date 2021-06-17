@@ -9,7 +9,7 @@ import logging
 #import time
 
 from r2r_offer_utils import normalization
-from r2r_offer_utils.cache_operations import read_data_from_cache_wrapper, store_simple_data_to_cache
+from r2r_offer_utils.cache_operations import read_data_from_cache_wrapper, store_simple_data_to_cache_wrapper
 from r2r_offer_utils.logging import setup_logger
 
 import rush_hours
@@ -97,10 +97,10 @@ def extract():
         else:
             offer_features_norm[feature] = normalization.minmaxscore(offer_features[feature], flipped=True)
             
-        store_simple_data_to_cache(pa_cache=cache, 
-                                   pa_request_id=request_id,
-                                   pa_data=offer_features_norm[feature],
-                                   pa_sub_key=feature)
+        store_simple_data_to_cache_wrapper(pa_cache=cache, 
+                                           pa_request_id=request_id,
+                                           pa_data=offer_features_norm[feature],
+                                           pa_sub_key=feature)
         
     """    
     print('\n\nOffer features:')
