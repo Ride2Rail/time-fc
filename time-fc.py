@@ -39,7 +39,7 @@ def extract():
     
     # just to test the async calls
     #logger.info('Going to sleep...')
-    #time.sleep(2)
+    #time.sleep(10)
     #logger.info('Just woke up.')
     
     data = request.get_json()
@@ -68,8 +68,23 @@ def extract():
                       'rush_overlap':{}}
     
     for offer_id in output_offer_level['offer_ids']:
-        offer_start_time = dt.fromisoformat(output_offer_level[offer_id]['start_time'])
-        offer_end_time = dt.fromisoformat(output_offer_level[offer_id]['end_time'])
+
+        offer_start_time_string = output_offer_level[offer_id]['start_time']
+        try:
+            offer_start_time = dt.fromisoformat(offer_start_time_string)
+        except ValueError:
+            # this is to handle an error in the formatting of the time string in some TRIAS files
+            offer_start_time_string = offer_start_time_string[:offer_start_time_string.index('+')] + '0' + offer_start_time_string[offer_start_time_string.index('+'):]
+            offer_start_time = dt.fromisoformat(offer_start_time_string)
+
+        offer_end_time_string = output_offer_level[offer_id]['end_time']
+        try:
+            offer_end_time = dt.fromisoformat(offer_end_time_string)
+        except ValueError:
+            # this is to handle an error in the formatting of the time string in some TRIAS files
+            offer_end_time_string = offer_end_time_string[:offer_end_time_string.index('+')] + '0' + offer_end_time_string[offer_end_time_string.index('+'):]
+            offer_end_time = dt.fromisoformat(offer_end_time_string)
+
         offer_duration = (offer_end_time - offer_start_time).total_seconds()/60
         offer_time_to_departure = (offer_start_time - current_time).total_seconds()/60
         rush_minutes, rush_overlap = rush_hours.calc_rush_overlap(offer_start_time, offer_end_time, country='default')
@@ -79,8 +94,25 @@ def extract():
         waiting_time_between_legs = 0
         if len(leg_ids) > 1:
             for i in range(1, len(leg_ids)):
-                previous_end_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i-1]]['end_time'])
-                next_start_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i]]['start_time'])
+                #previous_end_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i-1]]['end_time'])
+                #next_start_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i]]['start_time'])
+                
+                previous_end_time_string = output_tripleg_level[offer_id][leg_ids[i-1]]['end_time']
+                try:
+                    previous_end_time = dt.fromisoformat(previous_end_time_string)
+                except ValueError:
+                    # this is to handle an error in the formatting of the time string in some TRIAS files
+                    previous_end_time_string = previous_end_time_string[:previous_end_time_string.index('+')] + '0' + previous_end_time_string[previous_end_time_string.index('+'):]
+                    previous_end_time = dt.fromisoformat(previous_end_time_string)
+                
+                next_start_time_string = output_tripleg_level[offer_id][leg_ids[i]]['start_time']
+                try:
+                    next_start_time = dt.fromisoformat(next_start_time_string)
+                except ValueError:
+                    # this is to handle an error in the formatting of the time string in some TRIAS files
+                    next_start_time_string = next_start_time_string[:next_start_time_string.index('+')] + '0' + next_start_time_string[next_start_time_string.index('+'):]
+                    next_start_time = dt.fromisoformat(next_start_time_string)
+                
                 waiting_time_between_legs += (next_start_time - previous_end_time).total_seconds()/60
                             
         offer_features['duration'][offer_id] = offer_duration
