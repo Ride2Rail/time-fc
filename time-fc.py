@@ -59,8 +59,21 @@ def extract():
                                                                             pa_tripleg_level_items=['start_time', 'end_time'])
 
     # to be replaced with the actual date and time of the request
-    #current_time = dt(2019, 5, 5)
-    current_time = dt.fromisoformat('2019-05-05 00:05:00+00:00')
+    offer_start_time_string = output_offer_level[output_offer_level['offer_ids'][0]]['start_time']
+    try:
+        offer_start_time = dt.fromisoformat(offer_start_time_string)
+    except ValueError:
+        # this is to handle an error in the formatting of the time string in some TRIAS files
+        offer_start_time_string = offer_start_time_string[:offer_start_time_string.index('+')] + '0' + offer_start_time_string[offer_start_time_string.index('+'):]
+        offer_start_time = dt.fromisoformat(offer_start_time_string)
+    # get the time zone from one of the leg_times, or else default it to UTC
+    try:
+        time_zone = offer_start_time.tzinfo
+    except:
+        time_zone = timezone.utc
+    current_time = dt.now(tz=time_zone)
+    logger.info(f'Current time: {current_time}')
+    #current_time = dt.fromisoformat('2019-05-05 00:05:00+00:00')
     
     offer_features = {'duration':{},
                       'time_to_departure':{},
@@ -90,9 +103,10 @@ def extract():
         rush_minutes, rush_overlap = rush_hours.calc_rush_overlap(offer_start_time, offer_end_time, country='default')
         
         # compute the overall waiting time between legs
-        leg_ids = sorted(output_tripleg_level[offer_id]['triplegs'])
+        leg_ids = list(reversed((output_tripleg_level[offer_id]['triplegs'])))
         waiting_time_between_legs = 0
         if len(leg_ids) > 1:
+            logger.info('New offer')
             for i in range(1, len(leg_ids)):
                 #previous_end_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i-1]]['end_time'])
                 #next_start_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i]]['start_time'])
@@ -113,8 +127,11 @@ def extract():
                     next_start_time_string = next_start_time_string[:next_start_time_string.index('+')] + '0' + next_start_time_string[next_start_time_string.index('+'):]
                     next_start_time = dt.fromisoformat(next_start_time_string)
                 
+                logger.info(f'Previous end: {previous_end_time}')
+                logger.info(f'Next start: {next_start_time}')
                 waiting_time_between_legs += (next_start_time - previous_end_time).total_seconds()/60
-                            
+
+        logger.info(f'Waiting time between legs: {waiting_time_between_legs}')                   
         offer_features['duration'][offer_id] = offer_duration
         offer_features['time_to_departure'][offer_id] = offer_time_to_departure
         offer_features['waiting_time'][offer_id] = waiting_time_between_legs
