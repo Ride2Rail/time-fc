@@ -6,7 +6,6 @@ from datetime import datetime as dt
 from datetime import timedelta
 import configparser as cp
 import logging
-#import time
 
 from r2r_offer_utils import normalization
 from r2r_offer_utils.cache_operations import read_data_from_cache_wrapper, store_simple_data_to_cache_wrapper
@@ -21,8 +20,6 @@ app = Flask(service_name)
 config = cp.ConfigParser()
 config.read(f'{service_name}.conf')
 
-
-
 # cache
 cache = redis.Redis(host=config.get('cache', 'host'),
                     port=config.get('cache', 'port'),
@@ -36,12 +33,7 @@ logger.setLevel(logging.INFO)
 
 @app.route('/compute', methods=['POST'])
 def extract():
-    
-    # just to test the async calls
-    #logger.info('Going to sleep...')
-    #time.sleep(10)
-    #logger.info('Just woke up.')
-    
+        
     data = request.get_json()
     request_id = data['request_id']
 
@@ -66,6 +58,7 @@ def extract():
         # this is to handle an error in the formatting of the time string in some TRIAS files
         offer_start_time_string = offer_start_time_string[:offer_start_time_string.index('+')] + '0' + offer_start_time_string[offer_start_time_string.index('+'):]
         offer_start_time = dt.fromisoformat(offer_start_time_string)
+
     # get the time zone from one of the leg_times, or else default it to UTC
     try:
         time_zone = offer_start_time.tzinfo
@@ -73,7 +66,6 @@ def extract():
         time_zone = timezone.utc
     current_time = dt.now(tz=time_zone)
     logger.info(f'Current time: {current_time}')
-    #current_time = dt.fromisoformat('2019-05-05 00:05:00+00:00')
     
     offer_features = {'duration':{},
                       'time_to_departure':{},
@@ -108,8 +100,6 @@ def extract():
         if len(leg_ids) > 1:
             logger.info('New offer')
             for i in range(1, len(leg_ids)):
-                #previous_end_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i-1]]['end_time'])
-                #next_start_time = dt.fromisoformat(output_tripleg_level[offer_id][leg_ids[i]]['start_time'])
                 
                 previous_end_time_string = output_tripleg_level[offer_id][leg_ids[i-1]]['end_time']
                 try:
@@ -150,16 +140,7 @@ def extract():
                                            pa_request_id=request_id,
                                            pa_data=offer_features_norm[feature],
                                            pa_sub_key=feature)
-        
-    """    
-    print('\n\nOffer features:')
-    print(json.dumps(offer_features, indent=4, sort_keys=True))
-    
-    print('\n\nOffer features (norm):')
-    print(json.dumps(offer_features_norm, indent=4, sort_keys=True))
-
-    """
-    
+            
     return response
 
 
