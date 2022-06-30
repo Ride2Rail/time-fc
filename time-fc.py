@@ -81,7 +81,7 @@ def extract():
             # this is to handle an error in the formatting of the time string in some TRIAS files
             offer_start_time_string = offer_start_time_string[:offer_start_time_string.index('+')] + '0' + offer_start_time_string[offer_start_time_string.index('+'):]
             offer_start_time = dt.fromisoformat(offer_start_time_string)
-
+        logger.info(f'Offer {offer_id} starts at {offer_start_time}')
         offer_end_time_string = output_offer_level[offer_id]['end_time']
         try:
             offer_end_time = dt.fromisoformat(offer_end_time_string)
@@ -98,7 +98,6 @@ def extract():
         leg_ids = list(reversed((output_tripleg_level[offer_id]['triplegs'])))
         waiting_time_between_legs = 0
         if len(leg_ids) > 1:
-            logger.info('New offer')
             for i in range(1, len(leg_ids)):
                 
                 previous_end_time_string = output_tripleg_level[offer_id][leg_ids[i-1]]['end_time']
@@ -117,12 +116,16 @@ def extract():
                     next_start_time_string = next_start_time_string[:next_start_time_string.index('+')] + '0' + next_start_time_string[next_start_time_string.index('+'):]
                     next_start_time = dt.fromisoformat(next_start_time_string)
                 
-                logger.info(f'Previous end: {previous_end_time}')
-                logger.info(f'Next start: {next_start_time}')
                 waiting_time_between_legs += (next_start_time - previous_end_time).total_seconds()/60
 
+        logger.info(f'Time to departure: {offer_time_to_departure}')
         logger.info(f'Waiting time between legs: {waiting_time_between_legs}')                   
         offer_features['duration'][offer_id] = offer_duration
+        if offer_time_to_departure < 0:
+            negative_time_to_departure = True
+            offer_time_to_departure *= -1
+        else:
+            negative_time_to_departure = False
         offer_features['time_to_departure'][offer_id] = offer_time_to_departure
         offer_features['waiting_time'][offer_id] = waiting_time_between_legs
         offer_features['rush_overlap'][offer_id] = rush_overlap
@@ -131,11 +134,15 @@ def extract():
     # normalize features and store them to cache
     offer_features_norm = {}
     for feature in offer_features:
-        if norm_type == 'z_score':
-            offer_features_norm[feature] = normalization.zscore(offer_features[feature], flipped=True)
+        if feature == 'time_to_departure' and negative_time_to_departure:
+            flipped = False
         else:
-            offer_features_norm[feature] = normalization.minmaxscore(offer_features[feature], flipped=True)
-            
+            flipped = True
+        if norm_type == 'z_score':
+            offer_features_norm[feature] = normalization.zscore(offer_features[feature], flipped=flipped)
+        else:
+            offer_features_norm[feature] = normalization.minmaxscore(offer_features[feature], flipped=flipped)
+        logger.info(f'{feature}, {offer_features_norm[feature]}')    
         store_simple_data_to_cache_wrapper(pa_cache=cache, 
                                            pa_request_id=request_id,
                                            pa_data=offer_features_norm[feature],
